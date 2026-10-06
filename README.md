@@ -26,6 +26,8 @@ In modern financial payment networks, transactions must be audited without data 
 
 ## Architecture
 
+![AuditTrace Architecture](assets/pipeline_architecture.gif)
+
 ```
 [ Financial Sources: POS, Mobile, Web, ATM ]
                      │
