@@ -176,8 +176,8 @@ def generate_animated_gif():
         frames.append(frame.convert("RGB"))
 
     print(f"[*] Compiling {len(frames)} frames into seamless animated GIF...")
-    # Quantize to 256 colors for fast rendering & compact size
-    palette_frames = [f.quantize(colors=256, method=Image.Quantize.MEDIANCUT) for f in frames]
+    # Quantize to 128 colors (grayscale + white) for instant loading & compact size (<3MB)
+    palette_frames = [f.quantize(colors=128, method=Image.Quantize.FASTOCTREE) for f in frames]
 
     palette_frames[0].save(
         OUTPUT_GIF_PATH,
