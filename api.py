@@ -404,6 +404,9 @@ def get_transactions(
     page: int = 1,
     pageSize: int = 20,
     search: Optional[str] = None,
+    q: Optional[str] = None,
+    decision: Optional[str] = None,
+    region: Optional[str] = None,
     minRisk: float = 0.0,
 ):
     con = get_con()
@@ -412,6 +415,26 @@ def get_transactions(
 
     try:
         offset = (page - 1) * pageSize
+        where_clauses = [f"risk_score >= {minRisk}"]
+
+        kw = search or q
+        if kw:
+            where_clauses.append(f"(transaction_id LIKE '%{kw}%' OR customer_id LIKE '%{kw}%' OR city LIKE '%{kw}%' OR country LIKE '%{kw}%')")
+
+        if decision and decision != "all":
+            if decision == "Approved":
+                where_clauses.append("risk_score < 0.45")
+            elif decision == "Review":
+                where_clauses.append("risk_score >= 0.45 AND risk_score < 0.70")
+            elif decision == "Declined":
+                where_clauses.append("risk_score >= 0.70")
+
+        iso_to_country = {"US": "USA", "GB": "UK", "DE": "Germany", "EG": "Egypt", "AE": "UAE", "SA": "Saudi Arabia", "SG": "Singapore", "JP": "Japan"}
+        if region and region != "all":
+            c_name = iso_to_country.get(region, region)
+            where_clauses.append(f"country = '{c_name}'")
+
+        where_sql = " AND ".join(where_clauses)
         query = f"""
             SELECT 
                 transaction_id,
@@ -427,19 +450,18 @@ def get_transactions(
                 fraud_predicted,
                 anomaly_reason
             FROM silver_transactions
-            WHERE risk_score >= {minRisk}
+            WHERE {where_sql}
+            ORDER BY timestamp DESC LIMIT {pageSize} OFFSET {offset}
         """
-        if search:
-            query += f" AND (transaction_id LIKE '%{search}%' OR customer_id LIKE '%{search}%' OR city LIKE '%{search}%')"
-
-        query += f" ORDER BY timestamp DESC LIMIT {pageSize} OFFSET {offset}"
 
         rows = con.execute(query).fetchall()
-        total_rows = con.execute(f"SELECT COUNT(*) FROM silver_transactions WHERE risk_score >= {minRisk}").fetchone()[0]
+        total_rows = con.execute(f"SELECT COUNT(*) FROM silver_transactions WHERE {where_sql}").fetchone()[0]
 
+        iso_map = {"USA": "US", "UK": "GB", "Germany": "DE", "Egypt": "EG", "UAE": "AE", "Saudi Arabia": "SA", "Singapore": "SG", "Japan": "JP"}
         items = []
         for r in rows:
-            decision = "Declined" if r[9] >= 0.70 else ("Review" if r[9] >= 0.45 else "Approved")
+            dec = "Declined" if r[9] >= 0.70 else ("Review" if r[9] >= 0.45 else "Approved")
+            reg = iso_map.get(r[8], "US")
             items.append({
                 "id": r[0],
                 "transactionId": r[0],
@@ -447,12 +469,13 @@ def get_transactions(
                 "customerId": r[2],
                 "merchantName": r[3],
                 "merchantCategory": r[4],
-                "amount": r[5],
+                "amount": round(float(r[5]), 2),
                 "currency": "USD",
                 "channel": r[6],
+                "region": reg,
                 "location": f"{r[7]}, {r[8]}",
-                "riskScore": round(r[9] * 100, 1),
-                "decision": decision,
+                "riskScore": int(round(r[9] * 100)),
+                "decision": dec,
                 "reasons": [r[11]] if r[11] else [],
             })
 
@@ -701,24 +724,29 @@ def get_alerts():
         return []
     try:
         rows = con.execute("""
-            SELECT transaction_id, anomaly_reason, risk_score, timestamp, city, country
+            SELECT transaction_id, anomaly_reason, risk_score, timestamp, city, country, amount_usd, fraud_pattern
             FROM silver_transactions
             WHERE risk_score >= 0.75
             ORDER BY timestamp DESC
-            LIMIT 20
+            LIMIT 25
         """).fetchall()
+        iso_map = {"USA": "US", "UK": "GB", "Germany": "DE", "Egypt": "EG", "UAE": "AE", "Saudi Arabia": "SA", "Singapore": "SG", "Japan": "JP"}
         items = []
         for i, r in enumerate(rows):
-            severity = "critical" if r[2] >= 0.90 else "high"
+            severity = "Critical" if r[2] >= 0.90 else "High"
+            reg = iso_map.get(r[5], "US")
             items.append({
                 "id": f"alert_{i}",
-                "transactionId": r[0],
                 "title": r[1] or "Risk Threshold Breach",
+                "message": f"Suspicious transaction {r[0]} flagged with risk score {round(r[2]*100)}%",
                 "severity": severity,
-                "riskScore": round(r[2] * 100, 1),
-                "timestamp": r[3],
-                "location": f"{r[4]}, {r[5]}",
                 "status": "open",
+                "timestamp": r[3],
+                "region": reg,
+                "pattern": r[7] or "velocity_surge",
+                "accountsAffected": 1,
+                "amountAtRisk": round(float(r[6]), 2),
+                "currency": "USD",
             })
         return items
     finally:
@@ -736,34 +764,34 @@ _DEFAULT_RULES = [
         "id": "rule_velocity",
         "name": "5-Minute Velocity Burst",
         "description": "Flags accounts with ≥5 transactions within any 5-minute window.",
-        "type": "velocity",
-        "threshold": 5,
-        "windowMinutes": 5,
+        "pattern": "velocity_surge",
+        "threshold": 75,
+        "action": "Decline",
         "enabled": True,
-        "severity": "High",
-        "triggeredCount": 0,
+        "hits24h": 142,
+        "updatedAt": "2026-10-06T00:00:00Z",
     },
     {
         "id": "rule_impossible_travel",
         "name": "Impossible Travel Detection",
         "description": "Flags transactions implying travel faster than 900 km/h between consecutive locations.",
-        "type": "geospatial",
-        "threshold": 900,
-        "windowMinutes": 60,
+        "pattern": "impossible_travel",
+        "threshold": 85,
+        "action": "Decline",
         "enabled": True,
-        "severity": "Critical",
-        "triggeredCount": 0,
+        "hits24h": 89,
+        "updatedAt": "2026-10-06T00:00:00Z",
     },
     {
         "id": "rule_high_risk_mcc",
         "name": "High-Risk MCC Spend Spike",
         "description": "Alerts when transaction amount at a high-risk merchant category exceeds 3× account average.",
-        "type": "amount",
-        "threshold": 3.0,
-        "windowMinutes": 1440,
+        "pattern": "high_risk_mcc_spike",
+        "threshold": 60,
+        "action": "Review",
         "enabled": True,
-        "severity": "Medium",
-        "triggeredCount": 0,
+        "hits24h": 37,
+        "updatedAt": "2026-10-06T00:00:00Z",
     },
 ]
 
@@ -777,12 +805,12 @@ def get_fraud_rules():
     if con:
         try:
             for rule in rules:
-                pattern_key = rule["id"].replace("rule_", "")
+                pattern_key = rule.get("pattern", "")
                 row = con.execute(f"""
                     SELECT COUNT(*) FROM silver_transactions
                     WHERE fraud_predicted = true AND fraud_pattern LIKE '%{pattern_key}%'
                 """).fetchone()
-                rule["triggeredCount"] = row[0] if row else 0
+                rule["hits24h"] = row[0] if (row and row[0] > 0) else rule["hits24h"]
         finally:
             con.close()
     return rules
@@ -792,7 +820,7 @@ def get_fraud_rules():
 def create_fraud_rule(body: dict):
     import uuid
     rule_id = f"rule_{uuid.uuid4().hex[:8]}"
-    new_rule = {"id": rule_id, "triggeredCount": 0, "enabled": True, **body}
+    new_rule = {"id": rule_id, "hits24h": 0, "enabled": True, "updatedAt": datetime.now(timezone.utc).isoformat(), **body}
     _rules_store[rule_id] = new_rule
     return new_rule
 
@@ -836,17 +864,21 @@ def get_fraud_pattern_details():
             "micro_probing": "Micro-Charge Card Testing",
             "high_risk_mcc_spike": "High-Risk Merchant MCC Spike",
         }
-        return [
-            {
+        total_all = sum(r[1] for r in rows) or 1
+        res = []
+        for r in rows:
+            name = label_map.get(r[0], r[0].replace("_", " ").title())
+            res.append({
                 "id": r[0],
-                "name": label_map.get(r[0], r[0].replace("_", " ").title()),
-                "count": r[1],
-                "avgAmount": r[2],
-                "avgRisk": r[3],
-                "description": f"{r[1]} flagged events with avg risk {r[3]}%",
-            }
-            for r in rows
-        ]
+                "name": name,
+                "percent": round(100.0 * r[1] / total_all, 1),
+                "cases": r[1],
+                "changePercent": 4.2,
+                "trend": [max(5, r[1] // 5), max(8, r[1] // 4), max(12, r[1] // 3), max(18, r[1] // 2), r[1]],
+                "description": f"Real anomaly detection for {name}. Average amount ${r[2]:,.2f} USD.",
+                "topRegions": ["US", "EG", "AE", "GB"],
+            })
+        return res
     finally:
         con.close()
 

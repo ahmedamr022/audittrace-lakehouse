@@ -135,7 +135,7 @@ export function Alerts() {
                       <p className="text-ink-soft">{a.accountsAffected} accounts at risk</p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-                      {a.region.length === 2 &&
+                      {a.region?.length === 2 &&
                     <Link to={`/transactions?region=${a.region}`} aria-label={`Investigate ${a.title}`} className="icon-soft flex h-8 w-8 items-center justify-center rounded-lg">
                           <SearchIcon className="h-3.5 w-3.5" aria-hidden />
                         </Link>

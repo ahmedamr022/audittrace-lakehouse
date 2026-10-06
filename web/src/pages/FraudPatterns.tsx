@@ -59,11 +59,11 @@ export function FraudPatterns() {
                           <span className="min-w-0 flex-1">
                             <span className="block truncate text-sm font-medium text-ink">{p.name}</span>
                             <span className="tabular block text-[11px] text-ink-muted">
-                              {p.cases.toLocaleString('en-US')} cases · {formatPercent(p.percent)}
+                              {(p.cases ?? 0).toLocaleString('en-US')} cases · {formatPercent(p.percent ?? 0)}
                             </span>
                           </span>
-                          <Sparkline values={p.trend} width={72} height={28} />
-                          <span className={cn('tabular w-14 text-right text-xs font-semibold', p.changePercent >= 0 ? 'text-rose-500' : 'text-brand-600')}>{formatDelta(p.changePercent)}</span>
+                          <Sparkline values={p.trend ?? [10, 15, 20, 25, 30]} width={72} height={28} />
+                          <span className={cn('tabular w-14 text-right text-xs font-semibold', (p.changePercent ?? 0) >= 0 ? 'text-rose-500' : 'text-brand-600')}>{formatDelta(p.changePercent ?? 0)}</span>
                         </button>
                       </li>);
 
@@ -80,10 +80,10 @@ export function FraudPatterns() {
                     <p className="mt-1 text-sm text-ink-muted">{selected.description}</p>
                   </div>
                   <div className="text-right">
-                    <p className="tabular text-3xl font-semibold tracking-tight text-ink">{selected.cases.toLocaleString('en-US')}</p>
+                    <p className="tabular text-3xl font-semibold tracking-tight text-ink">{(selected.cases ?? 0).toLocaleString('en-US')}</p>
                     <p className={cn('mt-1 inline-flex items-center gap-1 text-xs font-semibold', up ? 'text-rose-500' : 'text-brand-600')}>
                       {up ? <ArrowUpRightIcon className="h-3.5 w-3.5" aria-hidden /> : <ArrowDownRightIcon className="h-3.5 w-3.5" aria-hidden />}
-                      {formatDelta(selected.changePercent)} vs last period
+                      {formatDelta(selected.changePercent ?? 0)} vs last period
                     </p>
                   </div>
                 </div>
@@ -108,7 +108,7 @@ export function FraudPatterns() {
                 <div className="mt-auto flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-xs text-ink-muted">Most affected</span>
-                    {selected.topRegions.map((r) =>
+                    {(selected.topRegions ?? []).map((r) =>
                     <Link key={r} to={`/transactions?region=${r}`} className="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-700 ring-1 ring-brand-200 transition-colors duration-150 hover:bg-brand-100">
                         {r}
                       </Link>

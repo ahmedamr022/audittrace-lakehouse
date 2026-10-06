@@ -152,7 +152,7 @@ export function FraudRules() {
                 )}
                     </div>
                     <div className="text-right lg:text-left">
-                      <p className="tabular text-sm font-semibold text-ink">{r.hits24h.toLocaleString('en-US')}</p>
+                      <p className="tabular text-sm font-semibold text-ink">{(r.hits24h ?? 0).toLocaleString('en-US')}</p>
                       <p className="text-[11px] text-ink-soft">hits / 24h</p>
                     </div>
                     <button
