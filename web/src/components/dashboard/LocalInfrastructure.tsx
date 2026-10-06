@@ -38,7 +38,7 @@ export function LocalInfrastructure() {
         {(services) =>
         <ol className="flex items-start justify-between gap-2 overflow-x-auto pb-1 scrollbar-thin">
             {services.map((s, i) => {
-            const Icon = INFRA_ICONS[s.icon];
+            const Icon = (s.icon && INFRA_ICONS[s.icon]) ? INFRA_ICONS[s.icon] : INFRA_ICONS.duckdb;
             return (
               <Fragment key={s.id}>
                   <li className="flex shrink-0 flex-col items-center gap-2.5">

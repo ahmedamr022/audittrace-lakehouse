@@ -1,6 +1,7 @@
 import type React from 'react';
 import {
   ChartNoAxesColumnIncreasingIcon,
+  CodeIcon,
   CreditCardIcon,
   DatabaseIcon,
   GaugeIcon,
@@ -11,19 +12,24 @@ import {
   SmartphoneIcon,
   UserXIcon,
   WaypointsIcon,
-  ZapIcon } from
-'lucide-react';
-import { SiApacheairflow, SiApachekafka, SiDbt, SiPostgresql, SiRedis } from 'react-icons/si';
-import type { InfraIcon, KpiId, PipelineIcon, SignalIcon as SignalIconKey } from '../../types/dashboard';
+  ZapIcon,
+} from 'lucide-react';
+import { SiApacheairflow, SiApachekafka, SiDuckdb, SiPostgresql, SiRedis } from 'react-icons/si';
+import type {
+  InfraIcon,
+  KpiId,
+  PipelineIcon,
+  SignalIcon as SignalIconKey,
+} from '../../types/dashboard';
 
-type IconComponent = React.ComponentType<{className?: string;'aria-hidden'?: boolean;}>;
+type IconComponent = React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>;
 
 export const KPI_ICONS: Record<KpiId, IconComponent> = {
   total_transactions: ChartNoAxesColumnIncreasingIcon,
   fraud_risk: ShieldIcon,
   blocked_value: DatabaseIcon,
   avg_processing: ZapIcon,
-  data_quality: DatabaseIcon
+  data_quality: DatabaseIcon,
 };
 
 export const SIGNAL_ICONS: Record<SignalIconKey, IconComponent> = {
@@ -31,15 +37,15 @@ export const SIGNAL_ICONS: Record<SignalIconKey, IconComponent> = {
   velocity_spike: WaypointsIcon,
   device_anomaly: SmartphoneIcon,
   card_testing: CreditCardIcon,
-  account_takeover: UserXIcon
+  account_takeover: UserXIcon,
 };
 
 export const PIPELINE_ICONS: Record<PipelineIcon, IconComponent> = {
   kafka_lag: SignalIcon,
   throughput: GaugeIcon,
   lakehouse: DatabaseIcon,
-  dbt: SiDbt,
-  great_expectations: ShieldCheckIcon
+  dbt: CodeIcon,
+  great_expectations: ShieldCheckIcon,
 };
 
 export const INFRA_ICONS: Record<InfraIcon, IconComponent> = {
@@ -47,5 +53,5 @@ export const INFRA_ICONS: Record<InfraIcon, IconComponent> = {
   postgresql: SiPostgresql,
   redis: SiRedis,
   airflow: SiApacheairflow,
-  duckdb: ChartNoAxesColumnIncreasingIcon
+  duckdb: SiDuckdb,
 };

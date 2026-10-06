@@ -31,6 +31,9 @@ data/lakehouse/dlq/*
 *.swp
 *.swo
 
-# OS files
-.DS_Store
-Thumbs.db
+# Logs & web builds
+logs/
+*.log
+web/node_modules/
+web/dist/
+

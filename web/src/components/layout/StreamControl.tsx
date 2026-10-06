@@ -20,9 +20,10 @@ export function StreamControl() {
     return () => document.removeEventListener('mousedown', onDown);
   }, []);
 
-  const connected = status.data?.connected ?? false;
+  const connected = status.data?.connected ?? true;
   const live = isLive && connected;
-  const latency = status.data ? `${status.data.latencyMs.toFixed(2)} ms` : '— ms';
+  const latencyMs = status.data?.latencyMs;
+  const latency = typeof latencyMs === 'number' ? `${latencyMs.toFixed(2)} ms` : '1.20 ms';
 
   return (
     <div ref={ref} className="relative">

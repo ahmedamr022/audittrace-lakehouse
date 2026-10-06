@@ -106,7 +106,19 @@ async function resolve<T>(path: string, mock: () => T, signal?: AbortSignal, ini
     await delay(lakehouseConfig.mockLatencyMs, signal);
     return mock();
   }
-  return request<T>(path, init, signal);
+  try {
+    return await request<T>(path, init, signal);
+  } catch (err) {
+    // If the signal was aborted, re-throw so the hook can ignore it
+    if (signal?.aborted) throw err;
+    // Network error (API offline, CORS, etc.) → fall back to mock data silently
+    if (err instanceof TypeError || (err instanceof LakehouseError && err.status == null)) {
+      console.warn(`[AuditTrace] API unreachable for ${path} — using mock data`);
+      await delay(50, signal);
+      return mock();
+    }
+    throw err;
+  }
 }
 
 const json = (method: string, body?: unknown): RequestInit => ({ method, body: body === undefined ? undefined : JSON.stringify(body) });

@@ -26,7 +26,7 @@ export function PipelineHealth({ className }: {className?: string;}) {
         {(metrics) =>
         <ul className="flex flex-1 flex-col justify-around divide-y divide-line">
             {metrics.map((m) => {
-            const Icon = PIPELINE_ICONS[m.icon];
+            const Icon = (m.icon && PIPELINE_ICONS[m.icon]) ? PIPELINE_ICONS[m.icon] : PIPELINE_ICONS.lakehouse;
             return (
               <li key={m.id} className="flex items-center gap-2.5 py-2">
                   <Icon className="h-4 w-4 shrink-0 text-ink" aria-hidden />

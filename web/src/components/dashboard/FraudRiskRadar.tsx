@@ -41,7 +41,7 @@ export function FraudRiskRadar() {
 
               <ul className="space-y-1.5">
                     {data.signals.map((s) => {
-                  const Icon = SIGNAL_ICONS[s.icon];
+                  const Icon = (s.icon && SIGNAL_ICONS[s.icon]) ? SIGNAL_ICONS[s.icon] : SIGNAL_ICONS.velocity_spike;
                   return (
                     <li key={s.id} className="flex items-center gap-2.5">
                           <Icon className="h-4 w-4 shrink-0 text-ink-muted" aria-hidden />

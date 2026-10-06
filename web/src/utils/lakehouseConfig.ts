@@ -40,12 +40,12 @@ export interface LakehouseConfig {
 }
 
 export const lakehouseConfig: LakehouseConfig = {
-  mode: 'mock',
-  baseUrl: '',
+  mode: 'rest',
+  baseUrl: 'http://localhost:8000',
   apiKey: '',
   timeoutMs: 15000,
   mockLatencyMs: 400,
-  /** Leave empty to stay in-app (shows the signed-out screen); set to your SSO logout URL in production. */
+  /** Leave empty to stay in-app; set to your SSO logout URL in production. */
   logoutUrl: '',
   refreshIntervals: {
     kpis: 30000,
